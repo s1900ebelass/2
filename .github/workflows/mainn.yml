@@ -1,0 +1,35 @@
+name: Run Webtop with Cloudflare Tunnel
+
+on:
+  workflow_dispatch: # Menjalankan workflow secara manual dari tab Actions
+
+jobs:
+  run-webtop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Start Webtop Container
+        run: sudo docker compose up -d
+
+      - name: Install Cloudflared
+        run: |
+          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cloudflared
+          chmod +x cloudflared
+          sudo mv cloudflared /usr/local/bin/
+
+      - name: Start Cloudflare Tunnel & Get Public URL
+        run: |
+          nohup cloudflared tunnel --url http://localhost:6080 > tunnel.log 2>&1 &
+          sleep 10
+          echo "=============================="
+          echo "WEBTOP PUBLIC LINK:"
+          grep -o 'https://[-a-zA-Z0-9]*\.trycloudflare\.com' tunnel.log || true
+          echo "=============================="
+
+      - name: Keep Webtop Running (Autosave di 5.5 Jam)
+        run: |
+          echo "Webtop berjalan. Akan otomatis berhenti dalam 5.5 jam untuk menyimpan cache data..."
+          sleep 19800
