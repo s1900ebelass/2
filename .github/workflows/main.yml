@@ -7,13 +7,13 @@ jobs:
   webtop:
     runs-on: ubuntu-latest
 
-    sts:
+    steps:
       - name: Start Webtop
         run: |
           cat << 'EOF' > docker-compose.yml
           services:
             debian-desktop:
-              imaepge: lscr.io/linuxserver/webtop:debian-xfce
+              image: lscr.io/linuxserver/webtop:debian-xfce
               container_name: debian_gui
               ports:
                 - '6080:3000'
