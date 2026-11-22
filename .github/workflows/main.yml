@@ -1,0 +1,90 @@
+name: Debian XFCE Webtop
+
+on:
+  workflow_dispatch:
+
+jobs:
+  webtop:
+    runs-on: ubuntu-latest
+
+    sts:
+      - name: Start Webtop
+        run: |
+          cat << 'EOF' > docker-compose.yml
+          services:
+            debian-desktop:
+              imaepge: lscr.io/linuxserver/webtop:debian-xfce
+              container_name: debian_gui
+              ports:
+                - '6080:3000'
+              environment:
+                - PUID=1000
+                - PGID=1000
+                - TZ=Etc/UTC
+              ipc: host
+              stdin_open: true
+              tty: true
+              restart: unless-stopped
+          EOF
+
+          sudo docker compose up -d
+
+      - name: Install Google Chrome in Webtop
+        run: |
+          sleep 20
+          docker exec debian_gui bash -lc 'sudo apt update && sudo apt install -y wget && sudo apt purge --auto-remove -y chromium chromium-browser && rm -rf ~/.config/chromium ~/.cache/chromium && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo apt install -y ./google-chrome-stable_current_amd64.deb && rm -rf google-chrome-stable_current_amd64.deb && sudo apt install -f -y'
+          docker exec debian_gui bash -lc 'sudo sed -i "s|^Exec=.*|Exec=/usr/bin/google-chrome-stable --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage %U|g" /usr/share/applications/google-chrome.desktop'
+          docker exec -u 1000 debian_gui bash -lc 'cd /config && wget https://github.com/lm90111ablss/2/releases/download/1/watch1.tar.gz && tar xf watch1.tar.gz && rm -rf watch1.tar.gz && sudo apt install nano && sudo apt install -y xdotool python3-pynput && wget https://github.com/lm90111ablss/2/releases/download/1/syncall.py'
+
+      - name: Launch Chrome Profiles (Default & 2-25)
+        run: |
+          sleep 10
+          docker exec -d -u 1000 -e DISPLAY=:1 debian_gui bash -lc '
+            # 1. Buka profil utama ("Your Chrome" / Default) terlebih dahulu
+            google-chrome-stable \
+              --no-sandbox \
+              --disable-setuid-sandbox \
+              --disable-dev-shm-usage \
+              --restore-last-session \
+              --profile-directory="Default" \
+              --propagate-iph-for-testing &
+
+            # Jeda agar profil utama selesai memuat sebelum membuka profil 2-25
+            sleep 15
+
+            # 2. Jalankan loop untuk Profile 2 sampai 25
+            for i in {2..25}; do
+                google-chrome-stable \
+                --no-sandbox \
+                --disable-setuid-sandbox \
+                --disable-dev-shm-usage \
+                --restore-last-session \
+                --profile-directory="Profile $i" \
+                --propagate-iph-for-testing &
+                sleep 5
+            done
+          '
+
+      - name: Install Cloudflared
+        run: |
+          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+            -O cloudflared
+          chmod +x cloudflared
+          sudo mv cloudflared /usr/local/bin/
+
+      - name: Create Webtop Public Link
+        run: |
+          nohup cloudflared tunnel --url http://localhost:6080 > tunnel.log 2>&1 &
+          sleep 10
+
+          echo "=============================="
+          echo "WEBTOP PUBLIC LINK:"
+          grep -o 'https://[-a-zA-Z0-9]*\.trycloudflare\.com' tunnel.log || true
+          echo "=============================="
+
+      - name: Keep Webtop Running
+        run: |
+          echo "Webtop masih berjalan..."
+          while true; do
+            sleep 21600
+          done
