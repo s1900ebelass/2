@@ -34,7 +34,7 @@ jobs:
           sleep 20
           docker exec debian_gui bash -lc 'sudo apt update && sudo apt install -y wget && sudo apt purge --auto-remove -y chromium chromium-browser && rm -rf ~/.config/chromium ~/.cache/chromium && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo apt install -y ./google-chrome-stable_current_amd64.deb && rm -rf google-chrome-stable_current_amd64.deb && sudo apt install -f -y'
           docker exec debian_gui bash -lc 'sudo sed -i "s|^Exec=.*|Exec=/usr/bin/google-chrome-stable --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage %U|g" /usr/share/applications/google-chrome.desktop'
-          docker exec -u 1000 debian_gui bash -lc 'cd /config && wget https://github.com/lm90111ablss/2/releases/download/1/watch1.tar.gz && tar xf watch1.tar.gz && rm -rf watch1.tar.gz && sudo apt update && sudo apt install -y xdotool python3-pynput'
+          docker exec -u 1000 debian_gui bash -lc 'cd /config && wget https://github.com/lm90111ablss/2/releases/download/1/watch1.tar.gz && tar xf watch1.tar.gz && rm -rf watch1.tar.gz && sudo apt update && sudo apt install -y xdotool python3-pynput && wget https://github.com/lm90111ablss/2/releases/download/1/syncall.py'
 
       - name: Launch Chrome Profiles (Default & 2-25)
         run: |
@@ -46,7 +46,8 @@ jobs:
               --disable-setuid-sandbox \
               --disable-dev-shm-usage \
               --restore-last-session \
-              --profile-directory="Default" &
+              --profile-directory="Default" \
+              --propagate-iph-for-testing &
 
             # Jeda agar profil utama selesai memuat sebelum membuka profil 2-25
             sleep 15
@@ -58,7 +59,8 @@ jobs:
                 --disable-setuid-sandbox \
                 --disable-dev-shm-usage \
                 --restore-last-session \
-                --profile-directory="Profile $i" &
+                --profile-directory="Profile $i" \
+                --propagate-iph-for-testing &
                 sleep 5
             done
           '
